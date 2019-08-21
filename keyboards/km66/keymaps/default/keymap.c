@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include QMK_KEYBOARD_H
+#include "joystick.h"
 
 // Defines the keycodes used by our macros in process_record_user
 enum custom_keycodes {
@@ -84,11 +85,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 void matrix_init_user(void) {
-
+  joystick_init();
 }
 
 void matrix_scan_user(void) {
-
+  joystick_process();
 }
 
 void led_set_user(uint8_t usb_led) {
