@@ -12,17 +12,16 @@
 #define JOYSTICK_X_ADC ADC_CHANNEL5
 #define JOYSTICK_Y_ADC ADC_CHANNEL6
 
-#define STICK_MAX_X 834
-#define STICK_MAX_Y 788
-#define STICK_MIN_X 247
-#define STICK_MIN_Y 249
-#define STICK_CENTER_X 504
-#define STICK_CENTER_Y 507
-#define X_AXIS_DEADZONE 20
-#define Y_AXIS_DEADZONE 20
+#define STICK_MAX_X 780
+#define STICK_MAX_Y 734
+#define STICK_MIN_X 227
+#define STICK_MIN_Y 230
+#define STICK_CENTER_X 480
+#define STICK_CENTER_Y 480
+#define X_AXIS_DEADZONE 50
+#define Y_AXIS_DEADZONE 50
 
 void joystick_init(void) {
-	print("Setting up ADC\n");
   	// Turn on the ADC for reading the joystick
   	ADC_Init(ADC_SINGLE_CONVERSION | ADC_PRESCALE_32);
   	ADC_SetupChannel(JOYSTICK_X_ADC_ID);
@@ -44,16 +43,22 @@ void joystick_toggle_mode(void) {
   pointing_device_set_report(newReport);
 }
 
-// Map a value from [in_min..in_max] to another value in the range of [out_min..out_max]
-int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max) {
-  return out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min);
+// Map a value from [in_min..in_max] to another value in the range of [-scale..scale]
+// Center is used because my joystick sensitivity differs slighly between sides
+int32_t map(int32_t x, int32_t x_min, int32_t x_max, int32_t x_center, int32_t scale) {
+  x = scale * (x - x_center);
+  if (x < 0) {
+  	return x / (x_center - x_min);
+  } else {
+  	return x / (x_max - x_center);
+  }
 }
 
 static int16_t joystick_read(uint32_t chanmask, uint16_t high, uint16_t low, uint16_t center, uint8_t deadzone)
 {
   uint16_t analogValue = ADC_GetChannelReading(ADC_REFERENCE_AVCC | chanmask);
 
-  uprintf("Analog value %u %u\n", analogValue, chanmask);
+  //uprintf("Analog value %u %u\n", analogValue, chanmask);
 
   if (joystickMode == SCROLL) deadzone *= 2;
 
@@ -77,8 +82,10 @@ static int16_t joystick_read(uint32_t chanmask, uint16_t high, uint16_t low, uin
       (int)analogValue,
       low,
       high,
-      -127,
+      center,
       127);
+
+  vMapped = vMapped * abs(vMapped) / 127; // Sensitivity curve experiments
 
   return vMapped * 1/8;
 }
@@ -97,8 +104,6 @@ void joystick_process(void)
 {
   int8_t x = -joystick_read_x();
   int8_t y = joystick_read_y();
-
-  uprintf("Joystick %d %d\n", x, y);
 
   if (x || y) {
 
