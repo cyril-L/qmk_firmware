@@ -23,6 +23,7 @@ enum custom_keycodes {
 };
 
 #define ____ KC_TRNS
+#define XXXX KC_NO
 
 #define OSX_DEL_LINE LGUI(KC_BSPC)
 #define OSX_DEL_WORD LALT(KC_BSPC)
@@ -42,6 +43,14 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 // Other declarations would go here, separated by commas, if you have them
 };
 
+enum {
+  L_DEFAULT = 0,
+  L_NF_G1_L1,
+  L_NF_G1_L2,
+  L_NF_G2_L1,
+  L_FN
+};
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   /* Layer 0: Default Layer
@@ -57,19 +66,40 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * |     |Gui|Alt  |         Space         |Alt  |Gui|   |     |
    * `-----------------------------------------------------------'
    */
-  [0] = LAYOUT( /* Base */
+  [L_DEFAULT] = LAYOUT( /* Base */
     KC_GRV,        KC_1,   KC_2,    KC_3,    KC_4,   KC_5,    KC_6,    KC_7,     KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC, \
     KC_TAB,        KC_Q,   KC_W,    KC_E,    KC_R,   KC_T,    KC_Y,    KC_U,     KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_NUHS, \
     KC_ESC,        KC_A,   KC_S,    KC_D,    KC_F,   KC_G,             KC_H,     KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
     TD(TD_SHIFT_CAPS), KC_Z,   KC_X,    KC_C,    KC_V,   KC_B,    KC_UP,   KC_NUBS,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT, \
-    KC_LCTL,               KC_LALT, KC_LGUI, KC_SPC, KC_LEFT, KC_DOWN, KC_RIGHT, OSL(1),  OSM(MOD_RALT), KC_RGUI,                   KC_RCTL \
+    KC_LCTL,               KC_LALT, KC_LGUI, KC_SPC, KC_LEFT, KC_DOWN, KC_RIGHT, OSL(L_FN),  OSM(MOD_RALT), KC_RGUI,                   KC_RCTL \
   ),
-  [1] = LAYOUT( /* Fn */
-    KC_PWR,  KC_F1,      KC_F2,      KC_F3,      KC_F4,      KC_F5,      KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
-    ____,    HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END,    ____,    OSX_TAB_PREV, OSX_TAB_NEXT, ____, \
-    ____,    HYPR(KC_A), HYPR(KC_S), HYPR(KC_D), HYPR(KC_F), HYPR(KC_G),             KC_LEFT, KC_DOWN, KC_UP, KC_RGHT,    ____, ____, ____, \
-    ____, HYPR(KC_Z), HYPR(KC_X), HYPR(KC_C), HYPR(KC_V), HYPR(KC_B), KC_UP,   KC_NUBS,  OSX_DEL_LINE, OSX_DEL_WORD, OSX_FDEL_WORD, OSX_FDEL_LINE, ____, KC_NLCK, \
-    ____,                ____,       ____,       ____,       ____,       ____,    ____,     ____,         ____,         ____,                               ____ \
+  [L_NF_G1_L1] = LAYOUT( /* French NF from QWERTY group 1 level 1  */
+    S(KC_2),     XXXX, XXXX, XXXX, XXXX, S(KC_9), S(KC_0), XXXX, XXXX, XXXX, S(KC_QUOT), KC_QUOT, S(KC_6), ____, \
+    ____, KC_A, KC_Z, KC_E, KC_R, KC_T, KC_Y, KC_U, KC_I, KC_O, KC_P, KC_MINS, S(KC_EQL), S(KC_8), \
+    ____, KC_Q, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, KC_M, KC_SLSH, ____, \
+    OSL(L_NF_G1_L2), KC_W, KC_X, KC_C, KC_V, KC_B, ____, S(KC_COMM), KC_N, KC_DOT, KC_COMM, S(KC_SCLN), KC_SCLN, OSL(L_NF_G1_L2), \
+    ____, ____, ____, ____, ____, ____, ____, ____, OSL(L_NF_G2_L1), ____, ____ \
+  ),
+  [L_NF_G1_L2] = LAYOUT( /* French NF from QWERTY group 1 level 2  */
+    S(KC_3), KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, S(KC_QUOT), XXXX, ____, \
+    ____, S(KC_A), S(KC_Z), S(KC_E), S(KC_R), S(KC_T), S(KC_Y), S(KC_U), S(KC_I), S(KC_O), S(KC_P), XXXX, XXXX, XXXX, \
+    ____, S(KC_Q), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(KC_M), KC_BSLS, ____, \
+    ____, S(KC_W), S(KC_X), S(KC_C), S(KC_V), S(KC_B), ____, S(KC_DOT), S(KC_N), S(KC_SLSH), S(KC_1), XXXX, KC_EQL, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
+  ),
+  [L_NF_G2_L1] = LAYOUT( /* French NF from QWERTY group 2 level 1  */
+    XXXX, XXXX, XXXX, KC_GRV, S(KC_7), KC_LBRC, KC_RBRC, XXXX, S(KC_MINS), XXXX, XXXX, XXXX, XXXX, ____, \
+    ____, XXXX, XXXX, XXXX, XXXX, S(KC_LBRC), S(KC_RBRC), XXXX, XXXX, XXXX, S(KC_5), XXXX, XXXX, XXXX, \
+    ____, XXXX, XXXX, S(KC_4), XXXX, XXXX, XXXX, XXXX, XXXX, S(KC_BSLS), XXXX, XXXX, ____, \
+    ____, XXXX, XXXX, XXXX, XXXX, XXXX, ____, XXXX, S(KC_GRV), XXXX, XXXX, XXXX, XXXX, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
+  ),
+  [L_FN] = LAYOUT( /* Fn */
+    KC_PWR, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
+    TG(L_NF_G1_L1), HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END, ____, OSX_TAB_PREV, OSX_TAB_NEXT, ____, \
+    ____, HYPR(KC_A), HYPR(KC_S), HYPR(KC_D), HYPR(KC_F), HYPR(KC_G), KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, ____, ____, ____, \
+    ____, HYPR(KC_Z), HYPR(KC_X), HYPR(KC_C), HYPR(KC_V), HYPR(KC_B), KC_UP, KC_NUBS, OSX_DEL_LINE, OSX_DEL_WORD, OSX_FDEL_WORD, OSX_FDEL_LINE, ____, KC_NLCK, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
   )
 };
 
