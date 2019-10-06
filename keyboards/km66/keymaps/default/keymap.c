@@ -129,16 +129,24 @@ void matrix_init_user(void) {
   joystick_init();
 }
 
+// Using F0 to hook up external things for tactile/audio feedback, like relays
+uint8_t matrix_key_count(void);
+
 void matrix_scan_user(void) {
   joystick_process();
+  if (matrix_key_count() != 0) {
+      writePinHigh(F0);
+  } else {
+      writePinLow(F0);
+  }
 }
 
 void led_set_user(uint8_t usb_led) {
-    if (IS_LED_ON(usb_led, USB_LED_NUM_LOCK)) {
-        writePinHigh(F0);
-    } else {
-        writePinLow(F0);
-    }
+    // if (matrix_key_count() != 0 || IS_LED_ON(usb_led, USB_LED_NUM_LOCK)) {
+    //     writePinHigh(F0);
+    // } else {
+    //     writePinLow(F0);
+    // }
     if (IS_LED_ON(usb_led, USB_LED_CAPS_LOCK)) {
         writePinHigh(F1);
     } else {
