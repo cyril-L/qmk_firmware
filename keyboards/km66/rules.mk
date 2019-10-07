@@ -82,3 +82,4 @@ POINTING_DEVICE_ENABLE = yes
 TAP_DANCE_ENABLE=yes
 
 SRC += joystick.c
+SRC += rolling_mod_tap.c
