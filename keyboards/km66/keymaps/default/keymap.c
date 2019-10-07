@@ -19,7 +19,9 @@
 // Defines the keycodes used by our macros in process_record_user
 enum custom_keycodes {
   QMKBEST = SAFE_RANGE,
-  QMKURL
+  QMKURL,
+  J_TOGGLE,
+  OOOO
 };
 
 #define ____ KC_TRNS
@@ -43,13 +45,19 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 // Other declarations would go here, separated by commas, if you have them
 };
 
-enum {
+typedef enum {
   L_DEFAULT = 0,
   L_NF_G1_L1,
   L_NF_G1_L2,
   L_NF_G2_L1,
-  L_FN
-};
+  L_FN,
+  L_RCMD,
+  L_MOUSE
+} layer_id_t;
+
+bool is_layer_on(layer_id_t layer) {
+  return layer_state & (1UL << (layer));
+}
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -71,7 +79,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TAB,        KC_Q,   KC_W,    KC_E,    KC_R,   KC_T,    KC_Y,    KC_U,     KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_NUHS, \
     KC_ESC,        KC_A,   KC_S,    KC_D,    KC_F,   KC_G,             KC_H,     KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
     TD(TD_SHIFT_CAPS), KC_Z,   KC_X,    KC_C,    KC_V,   KC_B,    KC_UP,   KC_NUBS,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT, \
-    KC_LCTL,               KC_LALT, KC_LGUI, KC_SPC, KC_LEFT, KC_DOWN, KC_RIGHT, OSL(L_FN),  OSM(MOD_RALT), KC_RGUI,                   KC_RCTL \
+    KC_LCTL,               KC_LALT, KC_LGUI, KC_SPC, KC_LEFT, KC_DOWN, KC_RIGHT, LT(L_FN, KC_F19),  OSM(MOD_RALT), OSL(L_RCMD),                   KC_RCTL \
   ),
   [L_NF_G1_L1] = LAYOUT( /* French NF from QWERTY group 1 level 1  */
     S(KC_2),     XXXX, XXXX, XXXX, XXXX, S(KC_9), S(KC_0), XXXX, XXXX, XXXX, S(KC_QUOT), KC_QUOT, S(KC_6), ____, \
@@ -96,15 +104,39 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
   [L_FN] = LAYOUT( /* Fn */
     KC_PWR, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
-    TG(L_NF_G1_L1), HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END, ____, OSX_TAB_PREV, OSX_TAB_NEXT, ____, \
+    TG(L_NF_G1_L1), HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END, ____, ____, ____, ____, \
     ____, HYPR(KC_A), HYPR(KC_S), HYPR(KC_D), HYPR(KC_F), HYPR(KC_G), KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, ____, ____, ____, \
     ____, HYPR(KC_Z), HYPR(KC_X), HYPR(KC_C), HYPR(KC_V), HYPR(KC_B), KC_UP, KC_NUBS, OSX_DEL_LINE, OSX_DEL_WORD, OSX_FDEL_WORD, OSX_FDEL_LINE, ____, KC_NLCK, \
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
-  )
+  ),
+  [L_RCMD] = LAYOUT( /*  */
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, OSX_TAB_PREV, OSX_TAB_NEXT, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, \
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
+  ),
+  [L_MOUSE] = LAYOUT( /* Mouse mode */
+    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    OOOO,    OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
+    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    OOOO,    OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
+    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,             OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
+    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    J_TOGGLE,   OOOO,  OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
+    OOOO,             OOOO, OOOO, OOOO, KC_BTN1, J_TOGGLE, KC_BTN2, OOOO,  OOOO, OOOO,                   OOOO \
+  ),
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
+    case OOOO:
+      layer_off(L_MOUSE);
+      // Get back to move mode for the next time the joystick is used
+      joystick_set_mode(MOVE);
+      break;
+    case J_TOGGLE:
+      if (record->event.pressed) {
+        joystick_set_mode(joystick_get_mode() == MOVE ? SCROLL : MOVE);
+      }
+      break;
     case QMKBEST:
       if (record->event.pressed) {
         // when keycode QMKBEST is pressed
@@ -130,15 +162,23 @@ void matrix_init_user(void) {
 }
 
 // Using F0 to hook up external things for tactile/audio feedback, like relays
-uint8_t matrix_key_count(void);
+// uint8_t matrix_key_count(void);
 
 void matrix_scan_user(void) {
-  joystick_process();
-  if (matrix_key_count() != 0) {
-      writePinHigh(F0);
-  } else {
-      writePinLow(F0);
+  // Turn on mouse layer if joystick is used
+  if (joystick_process()) {
+    layer_on(L_MOUSE);
   }
+  if (is_layer_on(L_MOUSE)) {
+    writePinHigh(F0);
+  } else {
+    writePinLow(F0);
+  }
+  // if (matrix_key_count() != 0) {
+  //     writePinHigh(F0);
+  // } else {
+  //     writePinLow(F0);
+  // }
 }
 
 void led_set_user(uint8_t usb_led) {

@@ -28,14 +28,14 @@ void joystick_init(void) {
   	ADC_SetupChannel(JOYSTICK_Y_ADC_ID);
 }
 
-static joystick_mode_t joystickMode = MOVE;
+static joystick_mode_t mode = MOVE;
 
-void joystick_toggle_mode(void) {
+joystick_mode_t joystick_get_mode() {
+  return mode;
+}
 
-  if (joystickMode == MOVE)
-    joystickMode = SCROLL;
-  else
-    joystickMode = MOVE;
+void joystick_set_mode(joystick_mode_t new_mode) {
+  mode = new_mode;
 
   // Clear state to avoid getting stuck if the mode is changed
   // while the stick is not centered
@@ -43,103 +43,103 @@ void joystick_toggle_mode(void) {
   pointing_device_set_report(newReport);
 }
 
-// Map a value from [in_min..in_max] to another value in the range of [-scale..scale]
-// Center is used because my joystick sensitivity differs slighly between sides
-int32_t map(int32_t x, int32_t x_min, int32_t x_max, int32_t x_center, int32_t scale) {
-  x = scale * (x - x_center);
-  if (x < 0) {
-  	return x / (x_center - x_min);
-  } else {
-  	return x / (x_max - x_center);
-  }
-}
-
-static int16_t joystick_read(uint32_t chanmask, uint16_t high, uint16_t low, uint16_t center, uint8_t deadzone)
+static float joystick_read(uint32_t chanmask, uint16_t high, uint16_t low, uint16_t center, uint8_t deadzone)
 {
-  uint16_t analogValue = ADC_GetChannelReading(ADC_REFERENCE_AVCC | chanmask);
+  float value = (float)ADC_GetChannelReading(ADC_REFERENCE_AVCC | chanmask) - center;
 
-  //uprintf("Analog value %u %u\n", analogValue, chanmask);
+  int sign;
+  int max;
 
-  if (joystickMode == SCROLL) deadzone *= 2;
-
-  // If the current value is too clone to the deadzone, do not move the mouse.
-  if (abs((int)analogValue - center) <= deadzone)
-    return 0;
-
-  // We dont want scrolling to be fine. It leads to crazy 2-axis scrolling at the same time.
-  // Only register it if the joystick moved significantly
-  if (joystickMode == SCROLL)
-  {
-      return analogValue > center ? 1 : -1; // We only need +/- 1 because we're using QMK's mouse wheel emulation.
+  if (value >= 0.0) {
+    sign = 1;
+    max = high - center;
+  } else {
+    sign = -1;
+    value = -value;
+    max = center - low;
   }
 
-  // Map the analog read value from 0 to 1024 to between -127 and 127 so that it can be fed to
-  // mouseReport.
-  // But in reality we never reach 0 and 1024 because the joystick is not that precise, so just
-  // map from the empiric range. (Note that these values as specific to your joystick, if you want finer control
-  // you need to adjust the defines to fit your readings).
-  int32_t vMapped = map(
-      (int)analogValue,
-      low,
-      high,
-      center,
-      127);
+  if (value <= deadzone || max <= deadzone) {
+    return 0;
+  }
 
-  vMapped = vMapped * abs(vMapped) / 127; // Sensitivity curve experiments
+  // Maps value between 0 and 1
+  value = (value - deadzone) / (max - deadzone);
+  if (value > 1.0) {
+    value = 1.0;
+  }
 
-  return vMapped * 1/8;
+  // Apply some non linearity for progressive movement
+  return sign * value * value;
+
+  //uprintf("Analog value %u %u\n", (unsinged) analogValue, (unsinged) chanmask);
 }
 
-static int32_t joystick_read_x(void)
+static float joystick_read_x(void)
 {
   return joystick_read(JOYSTICK_X_ADC, STICK_MAX_X, STICK_MIN_X, STICK_CENTER_X, X_AXIS_DEADZONE);
 }
 
-static int32_t joystick_read_y(void)
+static float joystick_read_y(void)
 {
   return joystick_read(JOYSTICK_Y_ADC, STICK_MAX_Y, STICK_MIN_Y, STICK_CENTER_Y, Y_AXIS_DEADZONE);
 }
 
-void joystick_process(void)
+static uint16_t last_fired = 0;
+
+int32_t scroll_pwm(int32_t ms_period) {
+  uint16_t now = timer_read();
+  if (ms_period == 0) { // special value used to prevent a big gap when starting to scroll
+    last_fired = now;
+    return 0;
+  }
+  uint16_t elapsed = now - last_fired;
+  // TODO test that it is ok when timer overflows
+  int32_t ticks_count = elapsed / ms_period;
+  if (abs(ticks_count) > 0) {
+    last_fired = now;
+  }
+  return ticks_count;
+}
+
+bool joystick_process(void)
 {
-  int8_t x = -joystick_read_x();
-  int8_t y = joystick_read_y();
+  float x = joystick_read_x();
+  float y = joystick_read_y();
+
+  int mouse_scaler = 24; // higher is faster
+  int wheel_scaler = 128; // slowest speed will be 1 tick every x ms, higher is slower
 
   if (x || y) {
 
-    if (joystickMode == MOVE)
-    {
       report_mouse_t currentReport = pointing_device_get_report();
-      currentReport.x = -x; // mounted left-side right
-      currentReport.y = y;
+    if (mode == MOVE)
+    {
+      currentReport.x = mouse_scaler * x;
+      currentReport.y = mouse_scaler * y;
       currentReport.v = 0;
       currentReport.h = 0;
-      pointing_device_set_report(currentReport);
     }
     else
     {
-      if (y > 0) // Up
-      {
-        register_code(KC_WH_U);
-        unregister_code(KC_WH_U);
+      // Current scrolling speed is way too fast
+      // needs to read some doc
+      if (fabs(y) > fabs(x)) {
+        currentReport.x = 0;
+        currentReport.y = 0;
+        currentReport.v = scroll_pwm(wheel_scaler * (y > 0 ? 1.0 - y : -1.0 - y));
+        currentReport.h = 0;
+      } else {
+        currentReport.x = 0;
+        currentReport.y = 0;
+        currentReport.v = 0;
+        currentReport.h = scroll_pwm(wheel_scaler * (x > 0 ? 1.0 - x : -1.0 - x));
       }
-      else // Down
-      {
-        register_code(KC_WH_D);
-        unregister_code(KC_WH_D);
-      }
-
-      if (x > 0)
-      {
-        register_code(KC_WH_R);
-        unregister_code(KC_WH_R);
-      }
-      else
-      {
-        register_code(KC_WH_L);
-        unregister_code(KC_WH_L);
-      }
-
     }
+    pointing_device_set_report(currentReport);
+    return true; // joystick is moving
+  } else {
+    scroll_pwm(0);
+    return false;
   }
 }

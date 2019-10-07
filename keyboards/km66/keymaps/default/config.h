@@ -18,4 +18,9 @@
 
 // place overrides here
 
+// To check for macOS, dont’t know what is the deal with TAP_HOLD_CAPS_DELAY
+
+// Needs to be high enough so I can double tap shift to get a caps lock
+// Needs to be low enough so I can use mod tap…
 #define TAPPING_TERM 200
+#define PERMISSIVE_HOLD
