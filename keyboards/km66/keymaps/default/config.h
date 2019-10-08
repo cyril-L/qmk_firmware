@@ -17,8 +17,3 @@
 #pragma once
 
 // place overrides here
-
-// To check for macOS, dont’t know what is the deal with TAP_HOLD_CAPS_DELAY
-
-// Needs to be high enough so I can double tap shift to get a caps lock
-#define TAPPING_TERM 300
