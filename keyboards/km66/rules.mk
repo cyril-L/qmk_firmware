@@ -81,4 +81,3 @@ HD44780_ENABLE = no 		# Enable support for HD44780 based LCDs (+400)
 POINTING_DEVICE_ENABLE = yes
 
 SRC += joystick.c
-SRC += rolling_mod_tap.c
