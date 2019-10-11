@@ -20,7 +20,8 @@
 enum custom_keycodes {
   J_TOGGLE = SAFE_RANGE,
   OOOO,
-  FN_SWITCH
+  FN_SWITCH,
+  CODE_SWITCH
 };
 
 #define ____ KC_TRNS
@@ -39,6 +40,7 @@ typedef enum {
   L_NF_G1_L2,
   L_NF_G2_L1,
   L_FN,
+  L_CODE,
   L_RCMD,
   L_MOUSE
 } layer_id_t;
@@ -65,7 +67,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [L_DEFAULT] = LAYOUT( /* Base */
     KC_GRV,        KC_1,   KC_2,    KC_3,    KC_4,   KC_5,    KC_6,    KC_7,     KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC, \
     KC_TAB,        KC_Q,   KC_W,    KC_E,    KC_R,   KC_T,    KC_Y,    KC_U,     KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_NUHS, \
-    KC_ESC,        KC_A,   KC_S,    KC_D,    KC_F,   KC_G,             KC_H,     KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
+    CODE_SWITCH,        KC_A,   KC_S,    KC_D,    KC_F,   KC_G,             KC_H,     KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT, \
     OSM(MOD_LSFT),  KC_Z,   KC_X,    KC_C,    KC_V,   KC_B,    KC_UP,   KC_NUBS,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, OSM(MOD_RSFT), \
     KC_LCTL,               KC_LALT, KC_LGUI, KC_SPC, KC_LEFT, KC_DOWN, KC_RIGHT, FN_SWITCH,  OSM(MOD_RALT), OSL(L_RCMD),                   KC_RCTL \
   ),
@@ -90,12 +92,19 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ____, XXXX, XXXX, XXXX, XXXX, XXXX, ____, XXXX, S(KC_GRV), XXXX, XXXX, XXXX, XXXX, ____, \
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
   ),
-  [L_FN] = LAYOUT( /* Fn */
+  [L_FN] = LAYOUT( /* Fn, mostly used for navigation and window management */
     KC_PWR, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
     TG(L_NF_G1_L1), HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END, ____, ____, ____, ____, \
     ____, HYPR(KC_A), HYPR(KC_S), HYPR(KC_D), HYPR(KC_F), HYPR(KC_G), KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, ____, ____, ____, \
     ____, HYPR(KC_Z), HYPR(KC_X), HYPR(KC_C), HYPR(KC_V), HYPR(KC_B), KC_UP, KC_NUBS, OSX_DEL_LINE, OSX_DEL_WORD, OSX_FDEL_WORD, OSX_FDEL_LINE, ____, KC_NLCK, \
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
+  ),
+  [L_CODE] = LAYOUT( /* Mostly used for code */
+    MEH(KC_GRV), MEH(KC_1), MEH(KC_2), MEH(KC_3), MEH(KC_4), MEH(KC_5), MEH(KC_6), MEH(KC_7), MEH(KC_8), MEH(KC_9), MEH(KC_0), MEH(KC_MINS), MEH(KC_EQL), MEH(KC_BSPC), \
+    MEH(KC_TAB), KC_Q, MEH(KC_W), MEH(KC_E), MEH(KC_R), MEH(KC_T), MEH(KC_Y), MEH(KC_U), MEH(KC_I), MEH(KC_O), MEH(KC_P), MEH(KC_LBRC), MEH(KC_RBRC), MEH(KC_NUHS), \
+    ____,MEH( KC_A), MEH(KC_S), MEH(KC_D), MEH(KC_F), MEH(KC_G), MEH(KC_H), MEH(KC_J), MEH(KC_K), MEH(KC_L), MEH(KC_SCLN), MEH(KC_QUOT), MEH(KC_ENT), \
+    ____, MEH(KC_Z), MEH(KC_X), MEH(KC_C), MEH(KC_V), MEH(KC_B), MEH(KC_UP), MEH(KC_NUBS), MEH(KC_N), MEH(KC_M), MEH(KC_COMM), MEH(KC_DOT), MEH(KC_SLSH), ____, \
+    ____,               ____, ____, MEH(KC_SPC), MEH(KC_LEFT), MEH(KC_DOWN), MEH(KC_RIGHT), ____,  ____, ____, ____ \
   ),
   [L_RCMD] = LAYOUT( /*  */
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, \
@@ -197,6 +206,7 @@ void rolling_mod_tap(
 }
 
 rolling_mod_tap_state_t fn_switch_state = {false, false};
+rolling_mod_tap_state_t code_switch_state = {false, false};
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   rolling_mod_tap(keycode, record, FN_SWITCH, &fn_switch_state);
@@ -206,6 +216,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     layer_off(L_FN);
     if (fn_switch_state.tapped) {
       tap_code(KC_F19);
+    }
+  }
+  rolling_mod_tap(keycode, record, CODE_SWITCH, &code_switch_state);
+  if (code_switch_state.pressed) {
+    layer_on(L_CODE);
+  } else {
+    layer_off(L_CODE);
+    if (code_switch_state.tapped) {
+      tap_code(KC_ESC);
     }
   }
   if(!double_shot_mod_tap(keycode, record, MOD_LSFT, KC_CAPS)) {
