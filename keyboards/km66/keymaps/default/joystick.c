@@ -4,28 +4,61 @@
 #include <LUFA/Drivers/Peripheral/ADC.h>
 #include <print.h>
 
-// Most of this come from
-// https://github.com/pyrho/qmk_firmware/blob/joystick/keyboards/gergo/matrix.c
+#define JOY_X_ADC_ID 5
+#define JOY_Y_ADC_ID 6
+#define JOY_X_ADC ADC_CHANNEL5
+#define JOY_Y_ADC ADC_CHANNEL6
 
-#define JOYSTICK_X_ADC_ID 5
-#define JOYSTICK_Y_ADC_ID 6
-#define JOYSTICK_X_ADC ADC_CHANNEL5
-#define JOYSTICK_Y_ADC ADC_CHANNEL6
+#define JOY_X_CENTER 480
+#define JOY_Y_CENTER 480
 
-#define STICK_MAX_X 780
-#define STICK_MAX_Y 734
-#define STICK_MIN_X 227
-#define STICK_MIN_Y 230
-#define STICK_CENTER_X 480
-#define STICK_CENTER_Y 480
-#define X_AXIS_DEADZONE 50
-#define Y_AXIS_DEADZONE 50
+// Amount of signal change to go from center to max
+#define JOY_SENSIBILITY (200.0)
+
+// Ignore signal when ratio with max is lower than deadzone
+#define JOY_DEADZONE (0.01)
+
+typedef struct raw_sample_t {
+  uint16_t x;
+  uint16_t y;
+} raw_sample_t;
+
+typedef struct normalized_sample_t {
+  float dist;
+  float angle;
+} normalized_sample_t;
 
 void joystick_init(void) {
-  	// Turn on the ADC for reading the joystick
   	ADC_Init(ADC_SINGLE_CONVERSION | ADC_PRESCALE_32);
-  	ADC_SetupChannel(JOYSTICK_X_ADC_ID);
-  	ADC_SetupChannel(JOYSTICK_Y_ADC_ID);
+  	ADC_SetupChannel(JOY_X_ADC_ID);
+  	ADC_SetupChannel(JOY_Y_ADC_ID);
+}
+
+void joystick_read_raw(raw_sample_t * sample) {
+  sample->x = ADC_GetChannelReading(ADC_REFERENCE_AVCC | JOY_X_ADC);
+  sample->y = ADC_GetChannelReading(ADC_REFERENCE_AVCC | JOY_Y_ADC);
+}
+
+// Returns a dist between 0.0 (centered) to 1.0 (maximum deviation)
+// Returns an angle between -pi and pi
+void joystick_read_normalized(normalized_sample_t * sample) {
+  raw_sample_t raw_sample;
+  joystick_read_raw(&raw_sample);
+  // Log raw data for experiments
+  //uprintf("JOY_RAW: %u, %u\n", (unsigned) raw_sample.x, (unsigned) raw_sample.y);
+  float x = ((float) raw_sample.x) - JOY_X_CENTER;
+  float y = ((float) raw_sample.y) - JOY_Y_CENTER;
+  sample->dist = (x * x + y * y) / (JOY_SENSIBILITY * JOY_SENSIBILITY);
+  if (sample->dist < JOY_DEADZONE) {
+    sample->dist = 0.0;
+    return;
+  } else if (sample->dist > 1.0) {
+    sample->dist = 1.0;
+  } else {
+    sample->dist -= JOY_DEADZONE;
+  }
+  sample->angle = atan2(y, x);
+  // uprintf("JOY: %d, %d\n", (int) (sample->dist * 100.0), (int)(sample->angle*180.0/M_PI));
 }
 
 static joystick_mode_t mode = MOVE;
@@ -43,55 +76,24 @@ void joystick_set_mode(joystick_mode_t new_mode) {
   pointing_device_set_report(newReport);
 }
 
-static float joystick_read(uint32_t chanmask, uint16_t high, uint16_t low, uint16_t center, uint8_t deadzone)
-{
-  float value = (float)ADC_GetChannelReading(ADC_REFERENCE_AVCC | chanmask) - center;
-
-  int sign;
-  int max;
-
-  if (value >= 0.0) {
-    sign = 1;
-    max = high - center;
-  } else {
-    sign = -1;
-    value = -value;
-    max = center - low;
-  }
-
-  if (value <= deadzone || max <= deadzone) {
-    return 0;
-  }
-
-  // Maps value between 0 and 1
-  value = (value - deadzone) / (max - deadzone);
-  if (value > 1.0) {
-    value = 1.0;
-  }
-
-  // Apply some non linearity for progressive movement
-  return sign * value * value;
-
-  //uprintf("Analog value %u %u\n", (unsinged) analogValue, (unsinged) chanmask);
-}
-
-static float joystick_read_x(void)
-{
-  return joystick_read(JOYSTICK_X_ADC, STICK_MAX_X, STICK_MIN_X, STICK_CENTER_X, X_AXIS_DEADZONE);
-}
-
-static float joystick_read_y(void)
-{
-  return joystick_read(JOYSTICK_Y_ADC, STICK_MAX_Y, STICK_MIN_Y, STICK_CENTER_Y, Y_AXIS_DEADZONE);
-}
+// When scrolling, this allows to send mouse reports with
+// a frequency depending on the joystick state.
 
 static uint16_t last_fired = 0;
 
-int32_t scroll_pwm(int32_t ms_period) {
+int32_t get_scroll_ticks(float speed) {
+  int wheel_scaler = 128; // slowest speed will be 1 tick every x ms, higher is slower
   uint16_t now = timer_read();
-  if (ms_period == 0) { // special value used to prevent a big gap when starting to scroll
+  int32_t ms_period;
+  if (speed == 0.0) { // special value used to prevent a big gap when starting to scroll
     last_fired = now;
     return 0;
+  } else if (speed > 0) {
+    ms_period = round(wheel_scaler * (1.0 - speed));
+    if (ms_period == 0) ms_period = 1;
+  } else {
+    ms_period = round(wheel_scaler * (-1.0 - speed));
+    if (ms_period == 0) ms_period = -1;
   }
   uint16_t elapsed = now - last_fired;
   // TODO test that it is ok when timer overflows
@@ -104,42 +106,49 @@ int32_t scroll_pwm(int32_t ms_period) {
 
 bool joystick_process(void)
 {
-  float x = joystick_read_x();
-  float y = joystick_read_y();
+  normalized_sample_t sample;
+  joystick_read_normalized(&sample);
+
+  // Apply some non linearity to go slower when the joystick is near the center
+  sample.dist = sample.dist * sample.dist;
 
   int mouse_scaler = 24; // higher is faster
-  int wheel_scaler = 128; // slowest speed will be 1 tick every x ms, higher is slower
 
-  if (x || y) {
-
-      report_mouse_t currentReport = pointing_device_get_report();
-    if (mode == MOVE)
-    {
+  if (sample.dist > 0.0) {
+    float x = sample.dist * cos(sample.angle);
+    float y = sample.dist * sin(sample.angle);
+    report_mouse_t currentReport = pointing_device_get_report();
+    if (mode == MOVE) {
       currentReport.x = mouse_scaler * x;
       currentReport.y = mouse_scaler * y;
       currentReport.v = 0;
       currentReport.h = 0;
-    }
-    else
-    {
+      pointing_device_set_report(currentReport);
+    } else {
       // Current scrolling speed is way too fast
       // needs to read some doc
       if (fabs(y) > fabs(x)) {
-        currentReport.x = 0;
-        currentReport.y = 0;
-        currentReport.v = scroll_pwm(wheel_scaler * (y > 0 ? 1.0 - y : -1.0 - y));
-        currentReport.h = 0;
+        int32_t ticks = get_scroll_ticks(y);
+        if (ticks != 0) {
+          currentReport.x = 0;
+          currentReport.y = 0;
+          currentReport.v = -ticks; // - for "natural" scroll
+          currentReport.h = 0;
+          pointing_device_set_report(currentReport);
+        }
       } else {
-        currentReport.x = 0;
-        currentReport.y = 0;
-        currentReport.v = 0;
-        currentReport.h = scroll_pwm(wheel_scaler * (x > 0 ? 1.0 - x : -1.0 - x));
+        int32_t ticks = get_scroll_ticks(x);
+        if (ticks != 0) {
+          currentReport.x = 0;
+          currentReport.y = 0;
+          currentReport.v = 0;
+          currentReport.h = ticks;
+          pointing_device_set_report(currentReport);
+        }
       }
     }
-    pointing_device_set_report(currentReport);
-    return true; // joystick is moving
-  } else {
-    scroll_pwm(0);
-    return false;
+    return true;
   }
+  get_scroll_ticks(0); // TODO: uggly needed to reset tick tracker
+  return false;
 }
