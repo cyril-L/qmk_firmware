@@ -9,6 +9,11 @@
 enum custom_keycodes_cyril_lu {
   CL_FN_SWITCH = SAFE_RANGE,
   CL_CODE_SWITCH,
+  CL_SQUOTS,
+  CL_DQUOTS,
+  CL_PARENS,
+  CL_BRCKTS,
+  CL_BRACES,
   CL_SAFE_RANGE
 };
 

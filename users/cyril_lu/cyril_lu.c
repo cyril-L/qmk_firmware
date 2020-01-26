@@ -31,5 +31,24 @@ bool process_record_cyril_lu(uint16_t keycode, keyrecord_t *record) {
   if(!double_shot_mod_tap(keycode, record, MOD_LSFT, KC_CAPS)) {
     return false;
   }
+
+  // TODO custom sendstring lut not implemented
+  switch (keycode) {
+    case CL_SQUOTS:
+      if (record->event.pressed) { SEND_STRING("--"SS_TAP(X_LEFT)); }
+      break;
+    case CL_DQUOTS:
+      if (record->event.pressed) { SEND_STRING(SS_LSFT("--")SS_TAP(X_LEFT)); }
+      break;
+    case CL_PARENS:
+      if (record->event.pressed) { SEND_STRING("56"SS_TAP(X_LEFT)); }
+      break;
+    case CL_BRCKTS:
+      if (record->event.pressed) { SEND_STRING(SS_RALT("56")SS_TAP(X_LEFT)); }
+      break;
+    case CL_BRACES:
+      if (record->event.pressed) { SEND_STRING(SS_RALT("ty")SS_TAP(X_LEFT)); }
+      break;
+  }
   return true;
 }
