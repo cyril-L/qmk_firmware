@@ -9,6 +9,7 @@
 enum custom_keycodes_cyril_lu {
   CL_FN_SWITCH = SAFE_RANGE,
   CL_CODE_SWITCH,
+  CL_TOGGLE_DIGITS,
   CL_SQUOTS,
   CL_DQUOTS,
   CL_PARENS,
@@ -29,3 +30,5 @@ typedef enum {
 } layer_id_t;
 
 bool process_record_cyril_lu(uint16_t keycode, keyrecord_t *record);
+
+void led_set_cyril_lu(uint8_t usb_led);

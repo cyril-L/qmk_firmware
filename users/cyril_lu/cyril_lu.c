@@ -2,6 +2,7 @@
 #include "cyril_lu.h"
 #include "rolling_mod_tap.h"
 #include "double_shot_mod_tap.h"
+#include "toggle_digits.h"
 
 rolling_mod_tap_state_t fn_switch_state = {false, false};
 rolling_mod_tap_state_t code_switch_state = {false, false};
@@ -28,7 +29,11 @@ bool process_record_cyril_lu(uint16_t keycode, keyrecord_t *record) {
     }
   }
   // Caps lock as double shift
-  if(!double_shot_mod_tap(keycode, record, MOD_LSFT, KC_CAPS)) {
+  if (double_shot_mod_tap(keycode, record, MOD_LSFT, KC_CAPS) == false) {
+    return false;
+  }
+
+  if (process_toggle_digits(keycode, record) == false) {
     return false;
   }
 
@@ -51,4 +56,8 @@ bool process_record_cyril_lu(uint16_t keycode, keyrecord_t *record) {
       break;
   }
   return true;
+}
+
+void led_set_cyril_lu(uint8_t usb_led) {
+  led_set_toggle_digits(usb_led);
 }

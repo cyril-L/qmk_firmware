@@ -15,6 +15,7 @@
  */
 #include QMK_KEYBOARD_H
 #include "cyril_lu.h"
+#include "toggle_digits.h"
 #include "joystick.h"
 
 enum custom_keycodes {
@@ -87,7 +88,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     MEH(KC_GRV), MEH(KC_1), MEH(KC_2), MEH(KC_3), MEH(KC_4), MEH(KC_5), MEH(KC_6), MEH(KC_7), MEH(KC_8), MEH(KC_9), MEH(KC_0), MEH(KC_MINS), MEH(KC_EQL), MEH(KC_BSPC), \
     MEH(KC_TAB), KC_Q, MEH(KC_W), MEH(KC_E), MEH(KC_R), MEH(KC_T), MEH(KC_Y), CL_SQUOTS, CL_DQUOTS, MEH(KC_O), MEH(KC_P), MEH(KC_LBRC), MEH(KC_RBRC), MEH(KC_NUHS), \
     ____,MEH( KC_A), MEH(KC_S), MEH(KC_D), MEH(KC_F), MEH(KC_G), MEH(KC_H), CL_PARENS, CL_BRCKTS, CL_BRACES, MEH(KC_SCLN), MEH(KC_QUOT), MEH(KC_ENT), \
-    ____, MEH(KC_Z), MEH(KC_X), MEH(KC_C), MEH(KC_V), MEH(KC_B), MEH(KC_UP), MEH(KC_NUBS), MEH(KC_N), MEH(KC_M), MEH(KC_COMM), MEH(KC_DOT), MEH(KC_SLSH), ____, \
+    CL_TOGGLE_DIGITS, MEH(KC_Z), MEH(KC_X), MEH(KC_C), MEH(KC_V), MEH(KC_B), MEH(KC_UP), MEH(KC_NUBS), MEH(KC_N), MEH(KC_M), MEH(KC_COMM), MEH(KC_DOT), MEH(KC_SLSH), ____, \
     ____,               ____, ____, MEH(KC_SPC), MEH(KC_LEFT), MEH(KC_DOWN), MEH(KC_RIGHT), ____,  ____, ____, ____ \
   ),
   [L_RCMD] = LAYOUT( /*  */
@@ -132,12 +133,15 @@ void matrix_init_user(void) {
 // Using F0 to hook up external things for tactile/audio feedback, like relays
 // uint8_t matrix_key_count(void);
 
+extern bool are_digits_toggled;
+extern bool are_caps_locked;
+
 void matrix_scan_user(void) {
   // Turn on mouse layer if joystick is used
   if (joystick_process()) {
     layer_on(L_MOUSE);
   }
-  if (is_layer_on(L_MOUSE)) {
+  if (is_layer_on(L_MOUSE) || are_digits_toggled) {
     writePinHigh(F0);
   } else {
     writePinLow(F0);
@@ -147,17 +151,14 @@ void matrix_scan_user(void) {
   // } else {
   //     writePinLow(F0);
   // }
+  bool shift_pressed = (get_mods() | get_oneshot_mods()) & MOD_MASK_SHIFT;
+  if ((are_caps_locked && !shift_pressed) || (shift_pressed && !are_caps_locked)) {
+    writePinHigh(F1);
+  } else {
+    writePinLow(F1);
+  }
 }
 
 void led_set_user(uint8_t usb_led) {
-    // if (matrix_key_count() != 0 || IS_LED_ON(usb_led, USB_LED_NUM_LOCK)) {
-    //     writePinHigh(F0);
-    // } else {
-    //     writePinLow(F0);
-    // }
-    if (IS_LED_ON(usb_led, USB_LED_CAPS_LOCK)) {
-        writePinHigh(F1);
-    } else {
-        writePinLow(F1);
-    }
+  led_set_cyril_lu(usb_led);
 }
