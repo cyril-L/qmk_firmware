@@ -16,7 +16,7 @@
 #define JOY_SENSIBILITY (200.0)
 
 // Ignore signal when ratio with max is lower than deadzone
-#define JOY_DEADZONE (0.005)
+#define JOY_DEADZONE (0.025)
 
 typedef struct raw_sample_t {
   uint16_t x;
@@ -58,7 +58,7 @@ void joystick_read_normalized(normalized_sample_t * sample) {
     sample->dist -= JOY_DEADZONE;
   }
   sample->angle = atan2(y, x);
-  // uprintf("JOY: %d, %d\n", (int) (sample->dist * 100.0), (int)(sample->angle*180.0/M_PI));
+  // uprintf("JOY: %d, %d\n", (int) (sample->dist * 1000.0), (int)(sample->angle*180.0/M_PI));
 }
 
 static joystick_mode_t mode = MOVE;
@@ -109,10 +109,7 @@ bool joystick_process(void)
   normalized_sample_t sample;
   joystick_read_normalized(&sample);
 
-  // Apply some non linearity to go slower when the joystick is near the center
-  sample.dist = sample.dist * sample.dist;
-
-  int mouse_scaler = 24; // higher is faster
+  int mouse_scaler = 60; // higher is faster
 
   if (sample.dist > 0.0) {
     float x = sample.dist * cos(sample.angle);
