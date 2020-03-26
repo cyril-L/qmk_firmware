@@ -78,7 +78,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
   ),
   [L_FN] = LAYOUT( /* Fn, mostly used for navigation and window management */
-    KC_PWR, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
+    RESET, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DELETE, \
     TG(L_NF_G1_L1), HYPR(KC_Q), HYPR(KC_W), HYPR(KC_E), HYPR(KC_R), HYPR(KC_T), KC_HOME, KC_PGDN, KC_PGUP, KC_END, ____, ____, ____, ____, \
     ____, HYPR(KC_A), HYPR(KC_S), HYPR(KC_D), HYPR(KC_F), HYPR(KC_G), KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, ____, ____, ____, \
     ____, HYPR(KC_Z), HYPR(KC_X), HYPR(KC_C), HYPR(KC_V), HYPR(KC_B), KC_UP, KC_NUBS, OSX_DEL_LINE, OSX_DEL_WORD, OSX_FDEL_WORD, OSX_FDEL_LINE, ____, KC_NLCK, \
@@ -99,11 +99,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ \
   ),
   [L_MOUSE] = LAYOUT( /* Mouse mode */
-    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    OOOO,    OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
-    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    OOOO,    OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
-    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,             OOOO,     OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
-    OOOO, OOOO, OOOO, OOOO, OOOO, OOOO,    J_TOGGLE,   OOOO,  OOOO,    OOOO,    OOOO, OOOO, OOOO, OOOO, \
-    OOOO,             OOOO, OOOO, OOOO, KC_BTN1, J_TOGGLE, KC_BTN2, OOOO,  OOOO, OOOO,                   OOOO \
+    OOOO, OOOO, OOOO,    OOOO,    OOOO,    OOOO,    OOOO,                OOOO, OOOO,     OOOO,    OOOO,    OOOO,    OOOO, OOOO, \
+    OOOO, OOOO, OOOO,    OOOO,    OOOO,    OOOO,    OOOO,                OOOO, OOOO,     OOOO,    OOOO,    OOOO,    OOOO, OOOO, \
+    OOOO, OOOO, KC_BTN2, KC_BTN3, KC_BTN1, J_TOGGLE,                           J_TOGGLE, KC_BTN1, KC_BTN3, KC_BTN2, OOOO, OOOO, OOOO, \
+    OOOO, OOOO, OOOO,    OOOO,    OOOO,    OOOO,             KC_WH_U,          OOOO,     OOOO,    OOOO,    OOOO,    OOOO, OOOO, OOOO, \
+    OOOO,                OOOO,    OOOO,    OOOO,    KC_WH_L, KC_WH_D, KC_WH_L, OOOO,     OOOO,    OOOO,                   OOOO \
   ),
 };
 

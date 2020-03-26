@@ -16,7 +16,7 @@
 #define JOY_SENSIBILITY (200.0)
 
 // Ignore signal when ratio with max is lower than deadzone
-#define JOY_DEADZONE (0.01)
+#define JOY_DEADZONE (0.005)
 
 typedef struct raw_sample_t {
   uint16_t x;
