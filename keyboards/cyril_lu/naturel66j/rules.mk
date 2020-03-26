@@ -14,6 +14,7 @@ MCU = atmega32u4
 #     software delays.
 F_CPU = 16000000
 
+EXTRAFLAGS += -flto
 
 #
 # LUFA specific
